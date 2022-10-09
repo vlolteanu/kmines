@@ -98,6 +98,8 @@ public:
     // enable use of qgraphicsitem_cast
     enum { Type = UserType + 1 };
     int type() const override;
+    void triviallyFlag();
+    bool isTriviallyFlagged() const;
 Q_SIGNALS:
     /**
      * Emitted when this item is revealed with mouse click
@@ -127,6 +129,7 @@ private:
      * Add a child object to display an overlayed pixmap
      */
     void addOverlay(const QString& spriteKey);
+    bool m_triviallyFlagged = false;
 };
 
 #endif

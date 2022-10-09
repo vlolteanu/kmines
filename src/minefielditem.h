@@ -198,6 +198,9 @@ private:
     int m_numUnrevealed;
 
     KGameRenderer* m_renderer;
+
+    void updateTrivials(int row, int col);
+    void printCellShit(int row, int col);
 };
 
 #endif

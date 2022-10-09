@@ -5,6 +5,7 @@
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 
+#include <iostream> //TODO: delete me
 #include "minefielditem.h"
 
 // own
@@ -283,6 +284,7 @@ void MineFieldItem::adjustItemPositions()
 
 bool MineFieldItem::onItemRevealed(int row, int col)
 {
+    std::cout << "revealed " << row << " " << col << std::endl;
     m_numUnrevealed--;
     if(itemAt(row,col)->hasMine())
     {
@@ -295,6 +297,13 @@ bool MineFieldItem::onItemRevealed(int row, int col)
     // now let's check for possible win/loss
     if(checkLost())
         return true;
+    updateTrivials(row, col);
+    const QList<FieldPos> list = adjacentRowColsFor(row,col);
+    for (const FieldPos& pos : list)
+    {
+        if (itemAt(pos)->isRevealed())
+            updateTrivials(pos.first, pos.second);
+    }
     return checkWon();
 }
 
@@ -319,6 +328,12 @@ void MineFieldItem::revealEmptySpace(int row, int col)
         {
             item->reveal();
             m_numUnrevealed--;
+            updateTrivials(row, col);
+            for (const FieldPos& pos : list)
+            {
+                if (itemAt(pos)->isRevealed())
+                    updateTrivials(pos.first, pos.second);
+            }
         }
     }
 }
@@ -634,6 +649,118 @@ QList<CellItem*> MineFieldItem::adjacentItemsFor(int row, int col)
     return resultingList;
 }
 
+void MineFieldItem::printCellShit(int row, int col)
+{
+    CellItem *item = itemAt(row,col);
+    std::cout << "row=" << row << " " << "col=" << col << " ";
+    if (item->isRevealed())
+        std::cout << "revealed ";
+    else
+        std::cout << "covered ";
+    if (item->isTriviallyFlagged())
+        std::cout << "trivially_flagged ";
+    if (item->hasMine())
+        std::cout << "mined ";
+    else
+        std::cout << "digit=" << item->digit();
+    std::cout << std::endl;
+}
 
+void MineFieldItem::updateTrivials(int row, int col)
+{
+    std::cout << "updateTrivials ";
+    printCellShit(row, col);
+
+
+    CellItem *centerItem = itemAt(row,col);
+    assert (!centerItem->hasMine());
+
+    // revealEmptySpace already does the work
+    if (centerItem->digit() == 0)
+        return;
+
+    // recursively reveal neighbour cells until we find cells with digit
+    const QList<FieldPos> list = adjacentRowColsFor(row,col);
+    QList<FieldPos> flagged;
+    QList<FieldPos> undecided;
+
+    for (const FieldPos& pos : list)
+    {
+        std::cout << "neighbor ";
+        printCellShit(pos.first, pos.second);
+
+        // first is row, second is col
+        CellItem *item = itemAt(pos);
+
+        if (item->isRevealed())
+        {
+            continue;
+        }
+        else if (item->isTriviallyFlagged())
+        {
+            flagged.append(pos);
+        }
+        else
+        {
+            undecided.append(pos);
+        }
+    }
+
+    if (flagged.size() == centerItem->digit())
+    {
+        for (const FieldPos& pos : undecided)
+        {
+            // first is row, second is col
+            CellItem *item = itemAt(pos);
+
+            if(item->digit() == 0)
+            {
+                item->reveal();
+                m_numUnrevealed--;
+                revealEmptySpace(pos.first,pos.second);
+            }
+            else
+            {
+                item->reveal();
+                m_numUnrevealed--;
+                const QList<FieldPos> list = adjacentRowColsFor(pos.first, pos.second);
+                for (const FieldPos& pos : list)
+                {
+                    if (itemAt(pos)->isRevealed())
+                        updateTrivials(pos.first, pos.second);
+                }
+            }
+        }
+    }
+
+    if (flagged.size() + undecided.size() == centerItem->digit())
+    {
+        for (const FieldPos& pos : undecided)
+        {
+            // first is row, second is col
+            CellItem *item = itemAt(pos);
+
+            std::cout << "flagging ";
+            printCellShit(pos.first, pos.second);
+
+            bool wasFlagged = item->isFlagged();
+
+
+            item->triviallyFlag();
+            if (!wasFlagged)
+            {
+                m_flaggedMinesCount++;
+                Q_EMIT flaggedMinesCountChanged(m_flaggedMinesCount);
+            }
+
+            const QList<FieldPos> list = adjacentRowColsFor(pos.first,pos.second);
+            for (const FieldPos& pos : list)
+            {
+                if (itemAt(pos)->isRevealed())
+                    updateTrivials(pos.first, pos.second);
+            }
+        }
+    }
+}
 
 

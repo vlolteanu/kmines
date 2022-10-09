@@ -60,6 +60,7 @@ void CellItem::reset()
     m_hasMine = false;
     m_exploded = false;
     m_digit = 0;
+    m_triviallyFlagged = false;
     updatePixmap();
 }
 
@@ -97,6 +98,7 @@ void CellItem::setRenderSize(const QSize &renderSize)
 void CellItem::setHasMine(bool hasMine)
 {
     m_hasMine = hasMine;
+    m_triviallyFlagged = false;
 }
 
 bool CellItem::hasMine() const
@@ -143,6 +145,9 @@ void CellItem::mark()
     // this will provide cycling through
     // Released -> "?"-mark -> "RedFlag"-mark -> Released
 
+    if (m_triviallyFlagged)
+        return;
+
     bool useQuestion = Settings::useQuestionMarks();
 
     switch(m_state)
@@ -183,6 +188,7 @@ void CellItem::reveal()
 void CellItem::unreveal()
 {
     m_state = KMinesState::Released;
+    m_triviallyFlagged = false;
     updatePixmap();
 }
 
@@ -224,4 +230,17 @@ void CellItem::addOverlay(const QString& spriteKey)
 {
     KGameRenderedItem* overlay = new KGameRenderedItem(renderer(), spriteKey, this);
     overlay->setRenderSize(renderSize());
+}
+
+void CellItem::triviallyFlag()
+{
+    assert(hasMine());
+    m_triviallyFlagged = true;
+    m_state = KMinesState::Flagged;
+    updatePixmap();
+}
+
+bool CellItem::isTriviallyFlagged() const
+{
+    return m_triviallyFlagged;
 }
