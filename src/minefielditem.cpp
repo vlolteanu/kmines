@@ -1,6 +1,7 @@
 /*
     SPDX-FileCopyrightText: 2007 Dmitry Suzdalev <dimsuz@gmail.com>
     SPDX-FileCopyrightText: 2010 Brian Croom <brian.s.croom@gmail.com>
+    SPDX-FileCopyrightText: 2022 Vladimir Olteanu <vl.olteanu@gmail.com>
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
